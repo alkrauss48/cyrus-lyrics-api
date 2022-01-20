@@ -9,6 +9,7 @@ require (
 	github.com/gin-gonic/gin v1.7.7
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/lint v0.0.0-20180702182130-06c8688daad7 // indirect
+	github.com/joho/godotenv v1.4.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/openzipkin/zipkin-go v0.1.1 // indirect
 	github.com/prometheus/client_golang v0.8.0 // indirect

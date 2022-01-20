@@ -1,9 +1,11 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 // album represents data about a record album.
@@ -22,6 +24,13 @@ var albums = []album{
 }
 
 func main() {
+	// load .env file
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
 	router := gin.Default()
 	router.GET("/albums", getAlbums)
 	router.GET("/albums/:id", getAlbumByID)
