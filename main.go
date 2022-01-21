@@ -1,11 +1,18 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/drive/v3"
 )
 
 // album represents data about a record album.
@@ -23,6 +30,85 @@ var albums = []album{
 	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
 }
 
+func getGoogleOAuthConfig() *oauth2.Config {
+	b, err := ioutil.ReadFile("credentials.json")
+	if err != nil {
+		log.Fatalf("Unable to read client secret file: %v", err)
+	}
+
+	// If modifying these scopes, delete your previously saved token.json.
+	config, err := google.ConfigFromJSON(b, drive.DriveFileScope)
+	if err != nil {
+		log.Fatalf("Unable to parse client secret file to config: %v", err)
+	}
+
+	return config
+}
+
+func googleLoginCallback(c *gin.Context) {
+	config := getGoogleOAuthConfig()
+	authCode := c.Query("code")
+
+	// Parse the OAuth authorization token for its individual parts,
+	// and then send it back to a new route as query params so that it can be
+	// accessed from the browser.
+	tok, err := config.Exchange(context.TODO(), authCode)
+
+	if err != nil {
+		log.Fatalf("Unable to retrieve token from web %v", err)
+	}
+
+	params := fmt.Sprintf("access_token=%s&refresh_token=%s", tok.AccessToken, tok.RefreshToken)
+
+	location := url.URL{
+		Path:     "/oauth/google/processed",
+		RawQuery: params,
+	}
+
+	c.Redirect(http.StatusFound, location.RequestURI())
+}
+
+func googleLoginProcessed(c *gin.Context) {
+	c.IndentedJSON(http.StatusOK, "success")
+}
+
+func googleLogin(c *gin.Context) {
+	config := getGoogleOAuthConfig()
+
+	authURL := config.AuthCodeURL(
+		"state-token",
+		oauth2.AccessTypeOffline,
+		oauth2.ApprovalForce,
+	)
+
+	c.Redirect(http.StatusFound, authURL)
+}
+
+// func listDriveFiles(c *gin.Context) {
+//	ctx := context.Background()
+// 	// NOTE: Get Token
+// 	client := config.Client(context.Background(), tok)
+//
+// 	srv, err := drive.NewService(ctx, option.WithHTTPClient(client))
+// 	if err != nil {
+// 		log.Fatalf("Unable to retrieve Drive client: %v", err)
+// 	}
+//
+// 	r, err := srv.Files.List().PageSize(10).
+// 		Fields("nextPageToken, files(id, name)").Do()
+// 	if err != nil {
+// 		log.Fatalf("Unable to retrieve files: %v", err)
+// 	}
+// 	fmt.Println("Files:")
+// 	if len(r.Files) == 0 {
+// 		fmt.Println("No files found.")
+// 	} else {
+// 		for _, i := range r.Files {
+// 			fmt.Printf("%s (%s)\n", i.Name, i.Id)
+// 		}
+// 	}
+// }
+
 func main() {
 	// load .env file
 	err := godotenv.Load(".env")
@@ -32,11 +118,14 @@ func main() {
 	}
 
 	router := gin.Default()
+	router.GET("/oauth/google", googleLogin)
+	router.GET("/oauth/google/callback", googleLoginCallback)
+	router.GET("/oauth/google/processed", googleLoginProcessed)
 	router.GET("/albums", getAlbums)
 	router.GET("/albums/:id", getAlbumByID)
 	router.POST("/albums", postAlbums)
 
-	router.Run("localhost:8080")
+	router.Run("localhost:8000")
 }
 
 // getAlbums responds with the list of all albums as JSON.
