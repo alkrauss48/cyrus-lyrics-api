@@ -7,12 +7,14 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
 )
 
 // album represents data about a record album.
@@ -58,7 +60,12 @@ func googleLoginCallback(c *gin.Context) {
 		log.Fatalf("Unable to retrieve token from web %v", err)
 	}
 
-	params := fmt.Sprintf("access_token=%s&refresh_token=%s", tok.AccessToken, tok.RefreshToken)
+	params := fmt.Sprintf(
+		"access_token=%s&refresh_token=%s&expiry=%s",
+		tok.AccessToken,
+		tok.RefreshToken,
+		tok.Expiry,
+	)
 
 	location := url.URL{
 		Path:     "/oauth/google/processed",
@@ -82,6 +89,46 @@ func googleLogin(c *gin.Context) {
 	)
 
 	c.Redirect(http.StatusFound, authURL)
+}
+
+func getTokenFromRequest(c *gin.Context) *oauth2.Token {
+	t, err := time.Parse(c.Query("expiry"), c.Query("expiry"))
+	if err != nil {
+		// TODO: Handle error.
+	}
+
+	return &oauth2.Token{
+		AccessToken:  c.Query("access_token"),
+		RefreshToken: c.Query("refresh_token"),
+		TokenType:    "Bearer",
+		Expiry:       t,
+	}
+}
+
+func copyEmptySheet(c *gin.Context) {
+	ctx := context.Background()
+	tok := getTokenFromRequest(c)
+	config := getGoogleOAuthConfig()
+
+	client := config.Client(context.Background(), tok)
+	srv, err := drive.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		log.Fatalf("Unable to retrieve Drive client: %v", err)
+	}
+
+	r, err := srv.Files.List().PageSize(10).
+		Fields("nextPageToken, files(id, name)").Do()
+	if err != nil {
+		log.Fatalf("Unable to retrieve files: %v", err)
+	}
+	fmt.Println("Files:")
+	if len(r.Files) == 0 {
+		fmt.Println("No files found.")
+	} else {
+		for _, i := range r.Files {
+			fmt.Printf("%s (%s)\n", i.Name, i.Id)
+		}
+	}
 }
 
 // func listDriveFiles(c *gin.Context) {
@@ -121,8 +168,10 @@ func main() {
 	router.GET("/oauth/google", googleLogin)
 	router.GET("/oauth/google/callback", googleLoginCallback)
 	router.GET("/oauth/google/processed", googleLoginProcessed)
+	router.GET("/sheets/copy/empty", copyEmptySheet)
+
+	// TODO: Remove these
 	router.GET("/albums", getAlbums)
-	router.GET("/albums/:id", getAlbumByID)
 	router.POST("/albums", postAlbums)
 
 	router.Run("localhost:8000")
@@ -146,20 +195,4 @@ func postAlbums(c *gin.Context) {
 	// Add the new album to the slice.
 	albums = append(albums, newAlbum)
 	c.IndentedJSON(http.StatusCreated, newAlbum)
-}
-
-// getAlbumByID locates the album whose ID value matches the id
-// parameter sent by the client, then returns that album as a response.
-func getAlbumByID(c *gin.Context) {
-	id := c.Param("id")
-
-	// Loop through the list of albums, looking for
-	// an album whose ID value matches the parameter.
-	for _, a := range albums {
-		if a.ID == id {
-			c.IndentedJSON(http.StatusOK, a)
-			return
-		}
-	}
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"})
 }
