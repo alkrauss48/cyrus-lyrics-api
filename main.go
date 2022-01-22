@@ -108,6 +108,39 @@ func getTokenFromRequest(c *gin.Context) *oauth2.Token {
 	}
 }
 
+func getSheetByID(c *gin.Context) {
+	spreadsheetId := c.Param("id")
+
+	ctx := context.Background()
+	tok := getTokenFromRequest(c)
+	config := getGoogleOAuthConfig()
+
+	client := config.Client(context.Background(), tok)
+
+	// Get all A-F cells in the first visible sheet
+	// Google Sheets A1 Range Notation
+	sheetRange := "A:F"
+
+	sheetsSrv, err := sheets.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		log.Fatalf("Unable to retrieve Sheets client: %v", err)
+	}
+
+	resp, err := sheetsSrv.Spreadsheets.Values.Get(spreadsheetId, sheetRange).Context(ctx).Do()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	json, err := resp.MarshalJSON()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// fmt.Printf("%#v\n", resp)
+
+	c.IndentedJSON(http.StatusOK, string(json))
+}
+
 func newSheet(c *gin.Context) {
 	ctx := context.Background()
 	tok := getTokenFromRequest(c)
@@ -208,6 +241,7 @@ func main() {
 	router.GET("/oauth/google/callback", googleLoginCallback)
 	router.GET("/oauth/google/processed", googleLoginProcessed)
 	router.GET("/sheets/new", newSheet)
+	router.GET("/sheets/:id", getSheetByID)
 
 	// TODO: Remove these
 	router.GET("/albums", getAlbums)
