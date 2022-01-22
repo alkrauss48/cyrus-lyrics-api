@@ -15,6 +15,7 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
+	"google.golang.org/api/sheets/v4"
 )
 
 // album represents data about a record album.
@@ -39,6 +40,8 @@ func getGoogleOAuthConfig() *oauth2.Config {
 	}
 
 	// If modifying these scopes, delete your previously saved token.json.
+	// config, err := google.ConfigFromJSON(b, drive.DriveScope)
+	// config, err := google.ConfigFromJSON(b, drive.DriveFileScope, drive.DriveReadonlyScope)
 	config, err := google.ConfigFromJSON(b, drive.DriveFileScope)
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
@@ -111,12 +114,73 @@ func copyEmptySheet(c *gin.Context) {
 	config := getGoogleOAuthConfig()
 
 	client := config.Client(context.Background(), tok)
-	srv, err := drive.NewService(ctx, option.WithHTTPClient(client))
+
+	driveSrv, err := drive.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		log.Fatalf("Unable to retrieve Drive client: %v", err)
 	}
 
-	r, err := srv.Files.List().PageSize(10).
+	sheetsSrv, err := sheets.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		log.Fatalf("Unable to retrieve Sheets client: %v", err)
+	}
+
+	categoryLabel := "Category"
+	subCategoryLabel := "Subcategory"
+	nameLabel := "Name"
+	urlLabel := "URL"
+	lyricsLabel := "Lyrics"
+	spotifyLabel := "Spotify URL"
+
+	_, err = sheetsSrv.Spreadsheets.Create(&sheets.Spreadsheet{
+		Properties: &sheets.SpreadsheetProperties{
+			Title: "New Sheet From API",
+		},
+		Sheets: []*sheets.Sheet{
+			{
+				Data: []*sheets.GridData{
+					{
+						RowData: []*sheets.RowData{
+							{
+								Values: []*sheets.CellData{
+									{
+										UserEnteredValue: &sheets.ExtendedValue{
+											StringValue: &categoryLabel,
+										},
+									}, {
+										UserEnteredValue: &sheets.ExtendedValue{
+											StringValue: &subCategoryLabel,
+										},
+									}, {
+										UserEnteredValue: &sheets.ExtendedValue{
+											StringValue: &nameLabel,
+										},
+									}, {
+										UserEnteredValue: &sheets.ExtendedValue{
+											StringValue: &urlLabel,
+										},
+									}, {
+										UserEnteredValue: &sheets.ExtendedValue{
+											StringValue: &lyricsLabel,
+										},
+									}, {
+										UserEnteredValue: &sheets.ExtendedValue{
+											StringValue: &spotifyLabel,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}).Do()
+	if err != nil {
+		log.Fatalf("Unable to create sheet: %v", err)
+	}
+
+	r, err := driveSrv.Files.List().PageSize(10).
 		Fields("nextPageToken, files(id, name)").Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve files: %v", err)
@@ -130,31 +194,6 @@ func copyEmptySheet(c *gin.Context) {
 		}
 	}
 }
-
-// func listDriveFiles(c *gin.Context) {
-//	ctx := context.Background()
-// 	// NOTE: Get Token
-// 	client := config.Client(context.Background(), tok)
-//
-// 	srv, err := drive.NewService(ctx, option.WithHTTPClient(client))
-// 	if err != nil {
-// 		log.Fatalf("Unable to retrieve Drive client: %v", err)
-// 	}
-//
-// 	r, err := srv.Files.List().PageSize(10).
-// 		Fields("nextPageToken, files(id, name)").Do()
-// 	if err != nil {
-// 		log.Fatalf("Unable to retrieve files: %v", err)
-// 	}
-// 	fmt.Println("Files:")
-// 	if len(r.Files) == 0 {
-// 		fmt.Println("No files found.")
-// 	} else {
-// 		for _, i := range r.Files {
-// 			fmt.Printf("%s (%s)\n", i.Name, i.Id)
-// 		}
-// 	}
-// }
 
 func main() {
 	// load .env file
