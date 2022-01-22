@@ -108,7 +108,7 @@ func getTokenFromRequest(c *gin.Context) *oauth2.Token {
 	}
 }
 
-func copyEmptySheet(c *gin.Context) {
+func newSheet(c *gin.Context) {
 	ctx := context.Background()
 	tok := getTokenFromRequest(c)
 	config := getGoogleOAuthConfig()
@@ -134,7 +134,7 @@ func copyEmptySheet(c *gin.Context) {
 
 	_, err = sheetsSrv.Spreadsheets.Create(&sheets.Spreadsheet{
 		Properties: &sheets.SpreadsheetProperties{
-			Title: "New Sheet From API",
+			Title: c.Query("title"),
 		},
 		Sheets: []*sheets.Sheet{
 			{
@@ -207,7 +207,7 @@ func main() {
 	router.GET("/oauth/google", googleLogin)
 	router.GET("/oauth/google/callback", googleLoginCallback)
 	router.GET("/oauth/google/processed", googleLoginProcessed)
-	router.GET("/sheets/copy/empty", copyEmptySheet)
+	router.GET("/sheets/new", newSheet)
 
 	// TODO: Remove these
 	router.GET("/albums", getAlbums)
