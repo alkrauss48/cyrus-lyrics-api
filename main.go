@@ -19,19 +19,39 @@ import (
 )
 
 // album represents data about a record album.
-type album struct {
-	ID     string  `json:"id"`
-	Title  string  `json:"title"`
-	Artist string  `json:"artist"`
-	Price  float64 `json:"price"`
-}
+// type album struct {
+// 	ID     string  `json:"id"`
+// 	Title  string  `json:"title"`
+// 	Artist string  `json:"artist"`
+// 	Price  float64 `json:"price"`
+// }
+//
+// // albums slice to seed record album data.
+// var albums = []album{
+// 	{ID: "1", Title: "Blue Train", Artist: "John Coltrane", Price: 56.99},
+// 	{ID: "2", Title: "Jeru", Artist: "Gerry Mulligan", Price: 17.99},
+// 	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
+// }
 
-// albums slice to seed record album data.
-var albums = []album{
-	{ID: "1", Title: "Blue Train", Artist: "John Coltrane", Price: 56.99},
-	{ID: "2", Title: "Jeru", Artist: "Gerry Mulligan", Price: 17.99},
-	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
-}
+// getAlbums responds with the list of all albums as JSON.
+// func getAlbums(c *gin.Context) {
+// 	c.IndentedJSON(http.StatusOK, albums)
+// }
+//
+// // postAlbums adds an album from JSON received in the request body.
+// func postAlbums(c *gin.Context) {
+// 	var newAlbum album
+//
+// 	// Call BindJSON to bind the received JSON to
+// 	// newAlbum.
+// 	if err := c.BindJSON(&newAlbum); err != nil {
+// 		return
+// 	}
+//
+// 	// Add the new album to the slice.
+// 	albums = append(albums, newAlbum)
+// 	c.IndentedJSON(http.StatusCreated, newAlbum)
+// }
 
 func getGoogleOAuthConfig() *oauth2.Config {
 	b, err := ioutil.ReadFile("credentials.json")
@@ -63,6 +83,7 @@ func googleLoginCallback(c *gin.Context) {
 		log.Fatalf("Unable to retrieve token from web %v", err)
 	}
 
+	// Build the query parameters for the parsed token
 	params := fmt.Sprintf(
 		"access_token=%s&refresh_token=%s&expiry=%s",
 		tok.AccessToken,
@@ -70,14 +91,18 @@ func googleLoginCallback(c *gin.Context) {
 		tok.Expiry,
 	)
 
+	// Build the full path for the parsed token
 	location := url.URL{
 		Path:     "/oauth/google/processed",
 		RawQuery: params,
 	}
 
+	// Redirect to the path with the parsed query params.
 	c.Redirect(http.StatusFound, location.RequestURI())
 }
 
+// Don't need to show anything here; this route is just for the mobile app to
+// get the parsed token information and store it.
 func googleLoginProcessed(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, "success")
 }
@@ -248,24 +273,4 @@ func main() {
 	router.POST("/albums", postAlbums)
 
 	router.Run("localhost:8000")
-}
-
-// getAlbums responds with the list of all albums as JSON.
-func getAlbums(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, albums)
-}
-
-// postAlbums adds an album from JSON received in the request body.
-func postAlbums(c *gin.Context) {
-	var newAlbum album
-
-	// Call BindJSON to bind the received JSON to
-	// newAlbum.
-	if err := c.BindJSON(&newAlbum); err != nil {
-		return
-	}
-
-	// Add the new album to the slice.
-	albums = append(albums, newAlbum)
-	c.IndentedJSON(http.StatusCreated, newAlbum)
 }
