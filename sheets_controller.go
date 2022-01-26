@@ -75,6 +75,12 @@ func newSheet(c *gin.Context) {
 		return
 	}
 
+	title := c.Query("title")
+	if title == "" {
+		c.JSON(http.StatusBadRequest, "Missing 'title' param")
+		return
+	}
+
 	categoryLabel := "Category"
 	subCategoryLabel := "Subcategory"
 	nameLabel := "Name"
@@ -82,9 +88,9 @@ func newSheet(c *gin.Context) {
 	lyricsLabel := "Lyrics"
 	spotifyLabel := "Spotify URL"
 
-	_, err = sheetsSrv.Spreadsheets.Create(&sheets.Spreadsheet{
+	resp, err := sheetsSrv.Spreadsheets.Create(&sheets.Spreadsheet{
 		Properties: &sheets.SpreadsheetProperties{
-			Title: c.Query("title"),
+			Title: title,
 		},
 		Sheets: []*sheets.Sheet{
 			{
@@ -132,5 +138,5 @@ func newSheet(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, nil)
+	c.JSON(http.StatusCreated, resp.SpreadsheetId)
 }
