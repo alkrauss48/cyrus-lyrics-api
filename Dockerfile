@@ -11,7 +11,7 @@ RUN go mod download
 
 COPY *.go ./
 
-RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /cl-api
+RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o cl-api
 
 ############################
 # STEP 2 build a small image
@@ -19,7 +19,7 @@ RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /cl-api
 FROM scratch
 
 # Copy our static executable.
-COPY --from=builder /cl-api /cl-api
+COPY --from=builder /app/cl-api /cl-api
 
 EXPOSE 8000
 
