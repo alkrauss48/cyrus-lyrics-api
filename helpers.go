@@ -26,10 +26,9 @@ func getGoogleOAuthConfig() (*oauth2.Config, error) {
 }
 
 func getTokenFromRequest(c *gin.Context) (*oauth2.Token, error) {
-	t, err := time.Parse(c.Query("expiry"), c.Query("expiry"))
+	t, err := time.Parse(time.RFC3339, c.Query("expiry"))
 	if err != nil {
-		// TODO: Figure out why this error gets called
-		// return nil, fmt.Errorf("Unable to parse 'expiry' query param: %v", err)
+		return nil, err
 	}
 
 	return &oauth2.Token{

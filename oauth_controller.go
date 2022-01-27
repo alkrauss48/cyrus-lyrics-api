@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
@@ -36,7 +37,7 @@ func googleLoginCallback(c *gin.Context) {
 		"access_token=%s&refresh_token=%s&expiry=%s",
 		tok.AccessToken,
 		tok.RefreshToken,
-		tok.Expiry,
+		tok.Expiry.Format(time.RFC3339),
 	)
 
 	// Build the full path for the parsed token
