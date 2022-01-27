@@ -4,11 +4,24 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 )
+
+type DefaultSheetIds struct {
+	Demo  string
+	Aaron string
+}
+
+func getDefaultSheetIds(c *gin.Context) {
+	c.JSON(http.StatusOK, DefaultSheetIds{
+		Demo:  os.Getenv("DEMO_SHEET_ID"),
+		Aaron: os.Getenv("AARON_SHEET_ID"),
+	})
+}
 
 func getSheetByID(c *gin.Context) {
 	spreadsheetId := c.Param("id")

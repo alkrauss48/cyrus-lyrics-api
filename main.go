@@ -20,6 +20,7 @@ func main() {
 	router.GET("/oauth/google/callback", googleLoginCallback)
 	router.GET("/oauth/google/processed", googleLoginProcessed)
 	router.GET("/sheets/new", newSheet)
+	router.GET("/sheets/default", getDefaultSheetIds)
 	router.GET("/sheets/:id", getSheetByID)
 
 	router.Run("localhost:8000")
