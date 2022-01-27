@@ -1,5 +1,5 @@
 ############################
-# STEP 1 build executable binary
+# STEP 1 build optimized executable binary
 ############################
 FROM golang:1.16-alpine AS builder
 
@@ -18,10 +18,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o cl-api
 ############################
 FROM scratch
 
-# Copy our static executable.
-COPY --from=builder /app/cl-api /cl-api
+COPY --from=builder /app/cl-api /
 
 EXPOSE 8000
 
-# Run the hello binary.
 ENTRYPOINT ["/cl-api"]
