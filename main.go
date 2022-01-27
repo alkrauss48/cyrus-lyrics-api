@@ -13,5 +13,5 @@ func main() {
 	router.GET("/sheets/default", getDefaultSheetIds)
 	router.GET("/sheets/:id", getSheetByID)
 
-	router.Run("localhost:8000")
+	router.Run(":8000")
 }
