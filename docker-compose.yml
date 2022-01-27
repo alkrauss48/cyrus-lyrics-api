@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      DEMO_SHEET_ID: "$DEMO_SHEET_ID"
+      AARON_SHEET_ID: "$AARON_SHEET_ID"
+      # GIN_MODE: release
+    volumes:
+      - ./credentials.json:/credentials.json
