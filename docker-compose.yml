@@ -6,9 +6,7 @@ services:
     restart: always
     ports:
       - "8000:8000"
-    environment:
-      DEMO_SHEET_ID: "$DEMO_SHEET_ID"
-      AARON_SHEET_ID: "$AARON_SHEET_ID"
-      # GIN_MODE: release
+    env_file:
+      - .env
     volumes:
       - ./credentials.json:/credentials.json
