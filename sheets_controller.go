@@ -138,5 +138,11 @@ func newSheet(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, resp.SpreadsheetId)
+	json, err := resp.MarshalJSON()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, "Unable to parse sheet json")
+		return
+	}
+
+	c.JSON(http.StatusCreated, string(json))
 }
