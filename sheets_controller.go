@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 )
@@ -23,23 +24,43 @@ func getDefaultSheetIds(c *gin.Context) {
 	})
 }
 
+func getAllSheets(c *gin.Context) {
+	ctx := context.Background()
+
+	client, err := getGoogleOAuthClient(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	srv, err := drive.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	resp, err := srv.Files.List().Fields("files(id, name)").Q("trashed = false").Do()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	json, err := resp.MarshalJSON()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, "Unable to parse sheet json")
+		return
+	}
+
+	c.Data(http.StatusOK, gin.MIMEJSON, json)
+}
+
 func getSheetByID(c *gin.Context) {
+	ctx := context.Background()
 	spreadsheetId := c.Param("id")
 
-	ctx := context.Background()
-	tok, err := getTokenFromRequest(c)
+	client, err := getGoogleOAuthClient(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-
-	config, err := getGoogleOAuthConfig()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	client := config.Client(context.Background(), tok)
 
 	// Get all A-F cells in the first visible sheet
 	// Google Sheets A1 Range Notation
@@ -63,24 +84,16 @@ func getSheetByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, string(json))
+	c.Data(http.StatusOK, gin.MIMEJSON, json)
 }
 
 func newSheet(c *gin.Context) {
 	ctx := context.Background()
-	tok, err := getTokenFromRequest(c)
+	client, err := getGoogleOAuthClient(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-
-	config, err := getGoogleOAuthConfig()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	client := config.Client(context.Background(), tok)
 
 	sheetsSrv, err := sheets.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
@@ -144,7 +157,7 @@ func newSheet(c *gin.Context) {
 				},
 			},
 		},
-	}).Do()
+	}).Fields("spreadsheetId").Do()
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, fmt.Sprintf("Unable to create sheet: %v", err))
@@ -157,5 +170,5 @@ func newSheet(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, string(json))
+	c.Data(http.StatusCreated, gin.MIMEJSON, json)
 }

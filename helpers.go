@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -73,4 +75,22 @@ func getTokenFromRequest(c *gin.Context) (*oauth2.Token, error) {
 		TokenType:    "Bearer",
 		Expiry:       t,
 	}, nil
+}
+
+func getGoogleOAuthClient(c *gin.Context) (*http.Client, error) {
+	tok, err := getTokenFromRequest(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return nil, err
+	}
+
+	config, err := getGoogleOAuthConfig()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return nil, err
+	}
+
+	client := config.Client(context.Background(), tok)
+
+	return client, nil
 }
