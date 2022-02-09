@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -40,20 +39,13 @@ func googleLoginCallback(c *gin.Context) {
 		tok.Expiry.Format(time.RFC3339),
 	)
 
-	// Build the full path for the parsed token
-	location := url.URL{
-		Path:     "/oauth/google/processed",
-		RawQuery: params,
-	}
+	// Build the deep link to send data into the iOS app
+	// baseLink = "/"
+	baseLink := "cyruslyrics://login"
+	deepLink := fmt.Sprintf("%s?%s", baseLink, params)
 
 	// Redirect to the path with the parsed query params.
-	c.Redirect(http.StatusFound, location.RequestURI())
-}
-
-// Don't need to show anything here; this route is just for the mobile app to
-// get the parsed token information and store it.
-func googleLoginProcessed(c *gin.Context) {
-	c.JSON(http.StatusOK, "success")
+	c.Redirect(http.StatusFound, deepLink)
 }
 
 func googleLogin(c *gin.Context) {
