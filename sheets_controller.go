@@ -17,7 +17,7 @@ type DefaultFile struct {
 	Name string `json:"name"`
 }
 
-func getDefaultSheetIds(c *gin.Context) {
+func indexDefaultSheets(c *gin.Context) {
 	c.JSON(http.StatusOK, []DefaultFile{
 		{
 			Id:   os.Getenv("DEMO_SHEET_ID"),
@@ -29,7 +29,7 @@ func getDefaultSheetIds(c *gin.Context) {
 	})
 }
 
-func getAllSheets(c *gin.Context) {
+func indexSheets(c *gin.Context) {
 	ctx := context.Background()
 
 	client, err := getGoogleOAuthClient(c)
@@ -57,7 +57,7 @@ func getAllSheets(c *gin.Context) {
 	c.Data(http.StatusOK, gin.MIMEJSON, json)
 }
 
-func getSheetByID(c *gin.Context) {
+func showSheet(c *gin.Context) {
 	ctx := context.Background()
 	spreadsheetId := c.Param("id")
 
@@ -92,7 +92,7 @@ func getSheetByID(c *gin.Context) {
 	c.Data(http.StatusOK, gin.MIMEJSON, json)
 }
 
-func newSheet(c *gin.Context) {
+func createSheet(c *gin.Context) {
 	ctx := context.Background()
 	client, err := getGoogleOAuthClient(c)
 	if err != nil {
@@ -176,4 +176,30 @@ func newSheet(c *gin.Context) {
 	}
 
 	c.Data(http.StatusCreated, gin.MIMEJSON, json)
+}
+
+func deleteSheet(c *gin.Context) {
+	ctx := context.Background()
+	spreadsheetId := c.Param("id")
+
+	client, err := getGoogleOAuthClient(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	srv, err := drive.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	_, err = srv.Files.Update(spreadsheetId, &drive.File{
+		Trashed: true,
+	}).Do()
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	c.Status(http.StatusNoContent)
 }

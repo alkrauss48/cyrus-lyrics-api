@@ -11,10 +11,11 @@ func main() {
 	router.GET("/", root)
 	router.GET("/oauth/google", googleLogin)
 	router.GET("/oauth/google/callback", googleLoginCallback)
-	router.GET("/sheets", getAllSheets)
-	router.GET("/sheets/new", newSheet)
-	router.GET("/sheets/default", getDefaultSheetIds)
-	router.GET("/sheets/:id", getSheetByID)
+	router.GET("/sheets", indexSheets)
+	router.POST("/sheets", createSheet)
+	router.GET("/sheets/default", indexDefaultSheets)
+	router.GET("/sheets/:id", showSheet)
+	router.DELETE("/sheets/:id", deleteSheet)
 
 	router.Run(":8000")
 }
