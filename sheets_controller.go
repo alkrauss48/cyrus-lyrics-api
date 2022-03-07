@@ -112,9 +112,9 @@ func createSheet(c *gin.Context) {
 		return
 	}
 
-	categoryLabel := "Category"
-	subCategoryLabel := "Subcategory"
-	nameLabel := "Name"
+	categoryLabel := "Genre"
+	subCategoryLabel := "Artist"
+	nameLabel := "Song Title"
 	urlLabel := "URL"
 	lyricsLabel := "Lyrics"
 	spotifyLabel := "Spotify URL"
