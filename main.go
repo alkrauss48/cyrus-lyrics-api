@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func main() {
+func initRouter() *gin.Engine {
 	router := gin.Default()
 
 	// Public, unauthenticated routes
@@ -24,5 +24,10 @@ func main() {
 	router.GET("/sheets/:id", sheets.Show)
 	router.DELETE("/sheets/:id", sheets.Delete)
 
+	return router
+}
+
+func main() {
+	router := initRouter()
 	router.Run(":8000")
 }
