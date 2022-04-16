@@ -3,13 +3,15 @@ FROM golang:1.16-alpine AS builder
 
 WORKDIR /app
 
-COPY . .
-
+COPY go.mod ./
+COPY go.sum ./
 RUN go mod download
 
 ARG GOOS=linux
 ARG GOOS=linux
 ARG CGO_ENABLED=0
+
+COPY . .
 
 RUN set -x \
     && go generate \

@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/api/drive/v2"
+	"google.golang.org/api/drive/v3"
 )
 
 type GoogleConfig struct {
