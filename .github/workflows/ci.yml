@@ -5,6 +5,9 @@ on:
     branches:
       - 'master'
 
+env:
+  go_version: "1.16"
+
 jobs:
   lint:
     name: Lint
