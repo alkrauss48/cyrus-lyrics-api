@@ -1,6 +1,4 @@
-############################
-# STEP 1 build optimized executable binary
-############################
+# Build the executable with Go
 FROM golang:1.16-alpine AS builder
 
 WORKDIR /app
@@ -13,9 +11,7 @@ COPY *.go ./
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o cl-api
 
-############################
-# STEP 2 build a small image
-############################
+## Copy the executable to a small image
 FROM alpine
 
 COPY --from=builder /app/cl-api /
