@@ -3,19 +3,21 @@ FROM golang:1.16-alpine AS builder
 
 WORKDIR /app
 
-COPY go.mod ./
-COPY go.sum ./
+COPY . .
+
 RUN go mod download
 
-COPY *.go ./
+ARG GOOS=linux
+ARG GOOS=linux
+ARG CGO_ENABLED=0
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o cl-api
+RUN set -x \
+    && go generate \
+    && go build -ldflags="-w -s"
 
 ## Copy the executable to a small image
 FROM alpine
 
-COPY --from=builder /app/cl-api /
+COPY --from=builder /app/cyrus-lyrics-api /
 
-EXPOSE 8000
-
-ENTRYPOINT ["/cl-api"]
+ENTRYPOINT ["/cyrus-lyrics-api"]
