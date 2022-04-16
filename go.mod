@@ -1,4 +1,4 @@
-module thecodeboss/cyrus-lyrics/api
+module github.com/alkrauss48/cyrus-lyrics-api
 
 go 1.16
 
