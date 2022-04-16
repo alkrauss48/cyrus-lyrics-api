@@ -1,4 +1,4 @@
-package main
+package oauth
 
 import (
 	"context"
@@ -6,28 +6,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/alkrauss48/cyrus-lyrics-api/helpers"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/oauth2"
 )
 
-func googleLogin(c *gin.Context) {
-	config, err := getGoogleOAuthConfig()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	authURL := config.AuthCodeURL(
-		"state-token",
-		oauth2.AccessTypeOffline,
-		oauth2.ApprovalForce,
-	)
-
-	c.Redirect(http.StatusFound, authURL)
-}
-
-func googleLoginCallback(c *gin.Context) {
-	config, err := getGoogleOAuthConfig()
+func Callback(c *gin.Context) {
+	config, err := helpers.GetGoogleOAuthConfig()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return

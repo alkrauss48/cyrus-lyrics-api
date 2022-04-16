@@ -1,17 +1,13 @@
-package main
+package helpers
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
-	"time"
 
-	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/drive/v2"
 )
 
 type GoogleConfig struct {
@@ -28,7 +24,7 @@ type SubGoogleConfig struct {
 	RedirectUris            [1]string `json:"redirect_uris"`
 }
 
-func marshalOAuthCredentials() ([]byte, error) {
+func MarshalOAuthCredentials() ([]byte, error) {
 	credentials := GoogleConfig{
 		Web: SubGoogleConfig{
 			AuthProviderX509CertUrl: os.Getenv("AUTH_PROVIDER_CERT_URL"),
@@ -49,8 +45,8 @@ func marshalOAuthCredentials() ([]byte, error) {
 	return jsonCredentials, nil
 }
 
-func getGoogleOAuthConfig() (*oauth2.Config, error) {
-	jsonCredentials, err := marshalOAuthCredentials()
+func GetGoogleOAuthConfig() (*oauth2.Config, error) {
+	jsonCredentials, err := MarshalOAuthCredentials()
 	if err != nil {
 		return nil, err
 	}
@@ -61,36 +57,4 @@ func getGoogleOAuthConfig() (*oauth2.Config, error) {
 	}
 
 	return config, nil
-}
-
-func getTokenFromRequest(c *gin.Context) (*oauth2.Token, error) {
-	t, err := time.Parse(time.RFC3339, c.Query("expiry"))
-	if err != nil {
-		return nil, err
-	}
-
-	return &oauth2.Token{
-		AccessToken:  c.Query("access_token"),
-		RefreshToken: c.Query("refresh_token"),
-		TokenType:    "Bearer",
-		Expiry:       t,
-	}, nil
-}
-
-func getGoogleOAuthClient(c *gin.Context) (*http.Client, error) {
-	tok, err := getTokenFromRequest(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return nil, err
-	}
-
-	config, err := getGoogleOAuthConfig()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return nil, err
-	}
-
-	client := config.Client(context.Background(), tok)
-
-	return client, nil
 }

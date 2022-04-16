@@ -1,27 +1,28 @@
 package main
 
 import (
-	"net/http"
-
+	"github.com/alkrauss48/cyrus-lyrics-api/oauth"
+	"github.com/alkrauss48/cyrus-lyrics-api/public"
+	"github.com/alkrauss48/cyrus-lyrics-api/sheets"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	router := gin.Default()
-	router.GET("/", root)
-	router.GET("/oauth/google", googleLogin)
-	router.GET("/oauth/google/callback", googleLoginCallback)
-	router.GET("/sheets", indexSheets)
-	router.POST("/sheets", createSheet)
-	router.GET("/sheets/default", indexDefaultSheets)
-	router.GET("/sheets/:id", showSheet)
-	router.DELETE("/sheets/:id", deleteSheet)
+
+	// Public, unauthenticated routes
+	router.GET("/", public.Root)
+	router.GET("/sheets/default", public.Default)
+
+	// OAuth-driven routes
+	router.GET("/oauth/google", oauth.Login)
+	router.GET("/oauth/google/callback", oauth.Callback)
+
+	// Authenticated Google Sheets driven routes
+	router.GET("/sheets", sheets.Index)
+	router.POST("/sheets", sheets.Create)
+	router.GET("/sheets/:id", sheets.Show)
+	router.DELETE("/sheets/:id", sheets.Delete)
 
 	router.Run(":8000")
-}
-
-func root(c *gin.Context) {
-	c.String(http.StatusOK, "You've found the CyrusLyrics API. "+
-		"For more information over the CyrusLyrics iOS app, navigate "+
-		"to https://cyruskrauss.com")
 }
