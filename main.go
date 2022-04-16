@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/alkrauss48/cyrus-lyrics-api/oauth"
 	"github.com/alkrauss48/cyrus-lyrics-api/public"
 	"github.com/alkrauss48/cyrus-lyrics-api/sheets"
@@ -29,5 +31,9 @@ func initRouter() *gin.Engine {
 
 func main() {
 	router := initRouter()
-	router.Run(":8000")
+	err := router.Run(":8000")
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }

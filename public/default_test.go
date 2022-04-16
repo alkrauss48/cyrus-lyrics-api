@@ -22,7 +22,7 @@ func TestDefaultRoute(t *testing.T) {
 
 	// Convert the JSON response to a map
 	var response []DefaultFile
-	_ = json.Unmarshal([]byte(w.Body.String()), &response)
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
 
 	assert.Equal(t, len(response), 2)
 }
