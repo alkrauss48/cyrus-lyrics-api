@@ -10,6 +10,22 @@ import (
 	"golang.org/x/oauth2"
 )
 
+func googleLogin(c *gin.Context) {
+	config, err := getGoogleOAuthConfig()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	authURL := config.AuthCodeURL(
+		"state-token",
+		oauth2.AccessTypeOffline,
+		oauth2.ApprovalForce,
+	)
+
+	c.Redirect(http.StatusFound, authURL)
+}
+
 func googleLoginCallback(c *gin.Context) {
 	config, err := getGoogleOAuthConfig()
 	if err != nil {
@@ -39,41 +55,10 @@ func googleLoginCallback(c *gin.Context) {
 		tok.Expiry.Format(time.RFC3339),
 	)
 
-	// Build the full path for the parsed token
-	// location := url.URL{
-	// 	Path:     "/oauth/google/processed",
-	// 	RawQuery: params,
-	// }
-
-	// Redirect to the path with the parsed query params.
-	// c.Redirect(http.StatusFound, location.RequestURI())
-
 	// Build the deep link to send data into the iOS app
 	baseLink := "cyruslyrics://login"
 	deepLink := fmt.Sprintf("%s?%s", baseLink, params)
 
 	// Redirect to the deep link
 	c.Redirect(http.StatusFound, deepLink)
-}
-
-// Don't need to show anything here; this route is just for the mobile app to
-// get the parsed token information and store it.
-// func googleLoginProcessed(c *gin.Context) {
-// 	c.JSON(http.StatusOK, "success")
-// }
-
-func googleLogin(c *gin.Context) {
-	config, err := getGoogleOAuthConfig()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	authURL := config.AuthCodeURL(
-		"state-token",
-		oauth2.AccessTypeOffline,
-		oauth2.ApprovalForce,
-	)
-
-	c.Redirect(http.StatusFound, authURL)
 }
