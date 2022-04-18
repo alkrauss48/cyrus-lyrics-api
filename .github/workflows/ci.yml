@@ -57,6 +57,7 @@ jobs:
         with:
           images: alkrauss48/cyrus-lyrics-api
           tags: |
+            type=ref,prefix=dev-,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}
             type=semver,pattern={{major}}.{{minor}}
