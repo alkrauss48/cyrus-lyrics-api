@@ -69,4 +69,4 @@ jobs:
           context: .
           file: docker/prod/Dockerfile
           push: true
-          tags: alkrauss48/cyrus-lyrics-api:1.0.1
+          tags: alkrauss48/cyrus-lyrics-api:1.0.2
