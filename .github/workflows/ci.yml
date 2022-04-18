@@ -1,9 +1,6 @@
 name: ci
 
-on:
-  push:
-    branches:
-      - 'master'
+on: push
 
 env:
   go_version: "1.16"
