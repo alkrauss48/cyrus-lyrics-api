@@ -7,7 +7,6 @@ import (
 )
 
 func Root(c *gin.Context) {
-	c.String(http.StatusOK, "You've found the CyrusLyrics API. "+
-		"For more information over the CyrusLyrics iOS app, navigate "+
-		"to https://cyruskrauss.com")
+	c.String(http.StatusOK, "Hello, OKC WebDevs! "+
+		"To see our talk slides, visit https://clvr.sh/okcwebdevs.")
 }
