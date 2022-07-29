@@ -3,6 +3,7 @@ package helpers
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -30,7 +31,12 @@ func GetTokenFromRequestQuery(c *gin.Context) (*oauth2.Token, error) {
 
 func GetTokenFromRequestHeaders(c *gin.Context) (*oauth2.Token, error) {
 	const BEARER_SCHEMA = "Bearer "
+
 	authHeader := c.GetHeader("Authorization")
+	if len(authHeader) <= len(BEARER_SCHEMA) {
+		return nil, errors.New("Invalid token")
+	}
+
 	tokenString := authHeader[len(BEARER_SCHEMA):]
 
 	decodedToken, err := base64.StdEncoding.DecodeString(tokenString)
