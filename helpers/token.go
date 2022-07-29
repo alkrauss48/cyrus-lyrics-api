@@ -29,15 +29,17 @@ func GetTokenFromRequestQuery(c *gin.Context) (*oauth2.Token, error) {
 }
 
 func GetTokenFromRequestHeaders(c *gin.Context) (*oauth2.Token, error) {
-	tokenHeader := c.Request.Header["Authorization"][0]
+	const BEARER_SCHEMA = "Bearer "
+	authHeader := c.GetHeader("Authorization")
+	tokenString := authHeader[len(BEARER_SCHEMA):]
 
-	decodedTokenHeader, err := base64.StdEncoding.DecodeString(tokenHeader)
+	decodedToken, err := base64.StdEncoding.DecodeString(tokenString)
 	if err != nil {
 		return nil, err
 	}
 
 	var token = oauth2.Token{}
-	err = json.Unmarshal(decodedTokenHeader, &token)
+	err = json.Unmarshal(decodedToken, &token)
 
 	if err != nil {
 		return nil, err
@@ -48,7 +50,7 @@ func GetTokenFromRequestHeaders(c *gin.Context) (*oauth2.Token, error) {
 
 func GetTokenFromRequest(c *gin.Context) (*oauth2.Token, error) {
 	if HasTokenQuery(c) {
-		return GetTokenFromRequest(c)
+		return GetTokenFromRequestQuery(c)
 	}
 
 	return GetTokenFromRequestHeaders(c)

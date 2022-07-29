@@ -47,13 +47,6 @@ func Callback(c *gin.Context) {
 		Expiry:       timeExpiry,
 	}
 
-	// token := oauth2.Token{
-	// 	AccessToken:  tok.AccessToken,
-	// 	RefreshToken: tok.RefreshToken,
-	// 	TokenType:    "Bearer",
-	// 	Expiry:       tok.Expiry.Format(time.RFC3339),
-	// }
-
 	jsonToken, err := json.Marshal(token)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, "Unable to marshall token")
@@ -63,17 +56,12 @@ func Callback(c *gin.Context) {
 	encodedToken := base64.StdEncoding.EncodeToString(jsonToken)
 
 	params := fmt.Sprintf(
-		"token=%s",
+		"token=%s&access_token=%s&refresh_token=%s&expiry=%s",
 		encodedToken,
+		tok.AccessToken,
+		tok.RefreshToken,
+		tok.Expiry.Format(time.RFC3339),
 	)
-
-	// Build the query parameters for the parsed token
-	// params := fmt.Sprintf(
-	// 	"access_token=%s&refresh_token=%s&expiry=%s",
-	// 	tok.AccessToken,
-	// 	tok.RefreshToken,
-	// 	tok.Expiry.Format(time.RFC3339),
-	// )
 
 	// Build the deep link to send data into the iOS app
 	baseLink := "cyruslyrics://login"
