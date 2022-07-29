@@ -2,12 +2,15 @@ package oauth
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/alkrauss48/cyrus-lyrics-api/helpers"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/oauth2"
 )
 
 func Callback(c *gin.Context) {
@@ -31,9 +34,30 @@ func Callback(c *gin.Context) {
 		return
 	}
 
-	// Build the query parameters for the parsed token
+	timeExpiry, err := time.Parse(time.RFC3339, tok.Expiry.Format(time.RFC3339))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, "Unable to parse current time")
+		return
+	}
+
+	token := oauth2.Token{
+		AccessToken:  tok.AccessToken,
+		RefreshToken: tok.RefreshToken,
+		TokenType:    "Bearer",
+		Expiry:       timeExpiry,
+	}
+
+	jsonToken, err := json.Marshal(token)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, "Unable to marshall token")
+		return
+	}
+
+	encodedToken := base64.StdEncoding.EncodeToString(jsonToken)
+
 	params := fmt.Sprintf(
-		"access_token=%s&refresh_token=%s&expiry=%s",
+		"token=%s&access_token=%s&refresh_token=%s&expiry=%s",
+		encodedToken,
 		tok.AccessToken,
 		tok.RefreshToken,
 		tok.Expiry.Format(time.RFC3339),
