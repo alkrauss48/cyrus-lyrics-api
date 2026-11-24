@@ -44,8 +44,10 @@ func Callback(c *gin.Context) {
 
 	// Keep only the fields the API needs. Truncating the expiry to whole
 	// seconds keeps the encoded token the same as earlier versions produced.
+	// Marshaling the secret fields is intentional: this encoded token is the
+	// credential the app sends back.
 	expiry := tok.Expiry.Truncate(time.Second)
-	jsonToken, err := json.Marshal(oauth2.Token{
+	jsonToken, err := json.Marshal(oauth2.Token{ //nolint:gosec // G117: see above
 		AccessToken:  tok.AccessToken,
 		RefreshToken: tok.RefreshToken,
 		TokenType:    "Bearer",

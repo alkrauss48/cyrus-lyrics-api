@@ -80,7 +80,7 @@ func TestCallbackMissingCode(t *testing.T) {
 }
 
 func TestCallbackExchangeFails(t *testing.T) {
-	google := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	google := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte(`{"error":"invalid_grant"}`))
