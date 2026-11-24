@@ -24,3 +24,19 @@ go.work
 .env
 credentials.json
 token.json
+.env.*
+!.env.example
+
+# Build output
+/cyrus-lyrics-api
+
+# OS files
+.DS_Store
+
+# Editors
+.idea/
+.vscode/
+
+# AI tooling (personal, uncommitted)
+.claude/settings.local.json
+CLAUDE.local.md
