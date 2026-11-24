@@ -22,9 +22,6 @@ https://developers.google.com/workspace/guides/create-credentials#oauth-client-i
 ```
 cp .env.example .env
 
-# Next, set the PROJECT_ID; this corresponds to the Google Cloud project
-# under which your OAuth credentials are created.
-#
 # Next, set the following Google OAuth creds in the .env file:
 #
 # CLIENT_ID
@@ -33,7 +30,19 @@ cp .env.example .env
 #
 # You will receive all of these from Google when creating OAuth credentials.
 
-docker-compose up
+docker compose up
+```
+
+The server listens on port 8000.
+
+## Development
+
+Requires Go 1.26 or later.
+
+```
+go test ./...
+go vet ./...
+golangci-lint run    # v2; config in .golangci.yml
 ```
 
 ## Available Routes
@@ -53,10 +62,16 @@ GET /oauth/google/callback    # Complete the Google OAuth login
 Authenticated Sheets Routes
 
 Note: This app uses the **drive.file** Google Drive scope,
-which allows access only to the files created under with this Google app.
+which allows access only to the files created with this Google app.
+
+Authenticate with an `Authorization: Bearer <token>` header, using the `token`
+value from the OAuth callback.
 ```
-GET /sheets/          # Get all sheet IDs and names
-GET /sheets/:id       # Get a single sheet's data by ID
-POST /sheets/         # Create a sheet, with a name
-DELETE /sheets/:id    # Delete a sheet by ID
+GET /sheets             # Get all sheet IDs and names
+GET /sheets/:id         # Get a single sheet's data by ID
+POST /sheets?title=     # Create a sheet, with a name
+DELETE /sheets/:id      # Delete a sheet by ID
 ```
+
+Errors are returned as `{"error": "<message>"}`. A missing, invalid, or revoked
+token returns `401`. Failures talking to Google return `5xx`.
