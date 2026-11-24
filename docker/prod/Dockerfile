@@ -1,25 +1,23 @@
-# Build the executable with Go
-FROM golang:1.16-alpine AS builder
+# Build a static executable with Go
+FROM golang:1.27-alpine AS builder
 
 WORKDIR /app
 
-COPY go.mod ./
-COPY go.sum ./
+COPY go.mod go.sum ./
 RUN go mod download
-
-ARG GOOS=linux
-ARG GOOS=linux
-ARG CGO_ENABLED=0
 
 COPY . .
 
-RUN set -x \
-    && go generate \
-    && go build -ldflags="-w -s"
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/cyrus-lyrics-api .
 
-## Copy the executable to a small image
-FROM alpine
+# Copy the executable to a small image
+FROM alpine:3.24
 
-COPY --from=builder /app/cyrus-lyrics-api /
+COPY --from=builder /out/cyrus-lyrics-api /cyrus-lyrics-api
+
+# Run as an unprivileged user (nobody)
+USER 65534:65534
+
+EXPOSE 8000
 
 ENTRYPOINT ["/cyrus-lyrics-api"]
