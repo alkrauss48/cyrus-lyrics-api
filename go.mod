@@ -4,7 +4,6 @@ go 1.26.10
 
 require (
 	github.com/gin-gonic/gin v1.12.0
-	github.com/go-playground/assert/v2 v2.2.0
 	golang.org/x/oauth2 v0.38.0
 	google.golang.org/api v0.316.0
 )
