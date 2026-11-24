@@ -1,11 +1,10 @@
 package oauth
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/alkrauss48/cyrus-lyrics-api/helpers"
@@ -13,60 +12,58 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// appLoginURL is the iOS app's deep link for finishing sign-in.
+const appLoginURL = "cyruslyrics://login"
+
+// Callback exchanges Google's authorization code for a token and redirects to
+// the iOS app with it.
+//
+// The app reads only the token param: standard base64 of the JSON-encoded
+// oauth2.Token. It sends that value back as a Bearer token. The
+// access_token, refresh_token, and expiry params serve app versions before
+// 2.0, which send them back as query params.
 func Callback(c *gin.Context) {
 	config, err := helpers.GetGoogleOAuthConfig()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+		helpers.AbortWithError(c, err)
 		return
 	}
 
 	authCode := c.Query("code")
 	if authCode == "" {
-		c.JSON(http.StatusBadRequest, "Missing 'code' param")
-	}
-
-	// Parse the OAuth authorization token for its individual parts,
-	// and then send it back to a new route as query params so that it can be
-	// accessed from the browser.
-	tok, err := config.Exchange(context.TODO(), authCode)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, "Unable to retrieve token from web")
+		helpers.AbortWithMessage(c, http.StatusBadRequest, "missing 'code' param")
 		return
 	}
 
-	timeExpiry, err := time.Parse(time.RFC3339, tok.Expiry.Format(time.RFC3339))
+	tok, err := config.Exchange(c.Request.Context(), authCode)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, "Unable to parse current time")
+		_ = c.Error(err)
+		helpers.AbortWithMessage(c, http.StatusBadRequest, "unable to exchange authorization code")
 		return
 	}
 
-	token := oauth2.Token{
+	// Keep only the fields the API needs. Truncating the expiry to whole
+	// seconds keeps the encoded token the same as earlier versions produced.
+	// Marshaling the secret fields is intentional: this encoded token is the
+	// credential the app sends back.
+	expiry := tok.Expiry.Truncate(time.Second)
+	jsonToken, err := json.Marshal(oauth2.Token{ //nolint:gosec // G117: see above
 		AccessToken:  tok.AccessToken,
 		RefreshToken: tok.RefreshToken,
 		TokenType:    "Bearer",
-		Expiry:       timeExpiry,
-	}
-
-	jsonToken, err := json.Marshal(token)
+		Expiry:       expiry,
+	})
 	if err != nil {
-		c.JSON(http.StatusBadRequest, "Unable to marshall token")
+		helpers.AbortWithError(c, err)
 		return
 	}
 
-	encodedToken := base64.StdEncoding.EncodeToString(jsonToken)
+	params := url.Values{
+		"token":         {base64.StdEncoding.EncodeToString(jsonToken)},
+		"access_token":  {tok.AccessToken},
+		"refresh_token": {tok.RefreshToken},
+		"expiry":        {expiry.Format(time.RFC3339)},
+	}
 
-	params := fmt.Sprintf(
-		"token=%s&access_token=%s&refresh_token=%s&expiry=%s",
-		encodedToken,
-		tok.AccessToken,
-		tok.RefreshToken,
-		tok.Expiry.Format(time.RFC3339),
-	)
-
-	// Build the deep link to send data into the iOS app
-	baseLink := "cyruslyrics://login"
-	deepLink := fmt.Sprintf("%s?%s", baseLink, params)
-
-	// Redirect to the deep link
-	c.Redirect(http.StatusFound, deepLink)
+	c.Redirect(http.StatusFound, appLoginURL+"?"+params.Encode())
 }

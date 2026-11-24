@@ -1,3 +1,4 @@
+// Package oauth handles Google sign-in for the iOS app.
 package oauth
 
 import (
@@ -8,10 +9,12 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// Login redirects to Google's consent screen. It requests offline access and
+// forces the consent prompt, so Google always returns a refresh token.
 func Login(c *gin.Context) {
 	config, err := helpers.GetGoogleOAuthConfig()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+		helpers.AbortWithError(c, err)
 		return
 	}
 

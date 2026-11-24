@@ -1,39 +1,37 @@
+// Package sheets has the authenticated routes for the user's own Google Sheets.
 package sheets
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/alkrauss48/cyrus-lyrics-api/helpers"
 	"github.com/gin-gonic/gin"
-	"google.golang.org/api/drive/v3"
-	"google.golang.org/api/option"
 )
 
+// Index lists the IDs and names of the user's sheets that aren't trashed.
+// Because of the drive.file scope, these are only sheets this app created.
 func Index(c *gin.Context) {
-	ctx := context.Background()
-
-	client, err := helpers.GetGoogleOAuthClient(c)
+	srv, err := helpers.GetDriveService(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+		helpers.AbortWithError(c, err)
 		return
 	}
 
-	srv, err := drive.NewService(ctx, option.WithHTTPClient(client))
+	resp, err := srv.Files.List().
+		Fields("files(id, name)").
+		Q("trashed = false").
+		Context(c.Request.Context()).
+		Do()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-	}
-
-	resp, err := srv.Files.List().Fields("files(id, name)").Q("trashed = false").Do()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-	}
-
-	json, err := resp.MarshalJSON()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, "Unable to parse sheet json")
+		helpers.AbortWithError(c, err)
 		return
 	}
 
-	c.Data(http.StatusOK, gin.MIMEJSON, json)
+	body, err := resp.MarshalJSON()
+	if err != nil {
+		helpers.AbortWithError(c, err)
+		return
+	}
+
+	c.Data(http.StatusOK, gin.MIMEJSON, body)
 }

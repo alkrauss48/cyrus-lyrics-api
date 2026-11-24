@@ -1,8 +1,9 @@
+// Package helpers holds the Google OAuth, token, and error-handling code
+// shared by the route handlers.
 package helpers
 
 import (
-	"encoding/json"
-	"fmt"
+	"errors"
 	"os"
 
 	"golang.org/x/oauth2"
@@ -10,51 +11,34 @@ import (
 	"google.golang.org/api/drive/v3"
 )
 
-type GoogleConfig struct {
-	Web SubGoogleConfig `json:"web"`
-}
+// ErrMissingConfig means a required OAuth environment variable isn't set.
+var ErrMissingConfig = errors.New("google oauth config is incomplete: CLIENT_ID, CLIENT_SECRET, and REDIRECT_URI are required")
 
-type SubGoogleConfig struct {
-	ClientId                string    `json:"client_id"`
-	ProjectId               string    `json:"project_id"`
-	AuthUri                 string    `json:"auth_uri"`
-	TokenUri                string    `json:"token_uri"`
-	AuthProviderX509CertUrl string    `json:"auth_provider_x509_cert_url"`
-	ClientSecret            string    `json:"client_secret"`
-	RedirectUris            [1]string `json:"redirect_uris"`
-}
-
-func MarshalOAuthCredentials() ([]byte, error) {
-	credentials := GoogleConfig{
-		Web: SubGoogleConfig{
-			AuthProviderX509CertUrl: os.Getenv("AUTH_PROVIDER_CERT_URL"),
-			AuthUri:                 os.Getenv("AUTH_URI"),
-			ClientId:                os.Getenv("CLIENT_ID"),
-			ClientSecret:            os.Getenv("CLIENT_SECRET"),
-			ProjectId:               os.Getenv("PROJECT_ID"),
-			RedirectUris:            [1]string{os.Getenv("REDIRECT_URI")},
-			TokenUri:                os.Getenv("TOKEN_URI"),
+// GetGoogleOAuthConfig builds the Google OAuth config from environment
+// variables. AUTH_URI and TOKEN_URI default to Google's endpoints.
+func GetGoogleOAuthConfig() (*oauth2.Config, error) {
+	config := &oauth2.Config{
+		ClientID:     os.Getenv("CLIENT_ID"),
+		ClientSecret: os.Getenv("CLIENT_SECRET"),
+		RedirectURL:  os.Getenv("REDIRECT_URI"),
+		Scopes:       []string{drive.DriveFileScope},
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  envOrDefault("AUTH_URI", google.Endpoint.AuthURL),
+			TokenURL: envOrDefault("TOKEN_URI", google.Endpoint.TokenURL),
 		},
 	}
 
-	jsonCredentials, err := json.Marshal(credentials)
-	if err != nil {
-		return nil, err
-	}
-
-	return jsonCredentials, nil
-}
-
-func GetGoogleOAuthConfig() (*oauth2.Config, error) {
-	jsonCredentials, err := MarshalOAuthCredentials()
-	if err != nil {
-		return nil, err
-	}
-
-	config, err := google.ConfigFromJSON(jsonCredentials, drive.DriveFileScope)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to parse client secret file to config: %v", err)
+	if config.ClientID == "" || config.ClientSecret == "" || config.RedirectURL == "" {
+		return nil, ErrMissingConfig
 	}
 
 	return config, nil
+}
+
+func envOrDefault(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+
+	return fallback
 }
