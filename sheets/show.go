@@ -1,46 +1,38 @@
 package sheets
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/alkrauss48/cyrus-lyrics-api/helpers"
 	"github.com/gin-gonic/gin"
-	"google.golang.org/api/option"
-	"google.golang.org/api/sheets/v4"
 )
 
+// sheetRange is every row of columns A-F in the first visible sheet, in
+// Google Sheets A1 notation.
+const sheetRange = "A:F"
+
+// Show returns the values in one of the user's sheets.
 func Show(c *gin.Context) {
-	ctx := context.Background()
-	spreadsheetId := c.Param("id")
-
-	client, err := helpers.GetGoogleOAuthClient(c)
+	srv, err := helpers.GetSheetsService(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+		helpers.AbortWithError(c, err)
 		return
 	}
 
-	// Get all A-F cells in the first visible sheet
-	// Google Sheets A1 Range Notation
-	sheetRange := "A:F"
-
-	sheetsSrv, err := sheets.NewService(ctx, option.WithHTTPClient(client))
+	resp, err := srv.Spreadsheets.Values.
+		Get(c.Param("id"), sheetRange).
+		Context(c.Request.Context()).
+		Do()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, "Unable to create sheets service")
+		helpers.AbortWithError(c, err)
 		return
 	}
 
-	resp, err := sheetsSrv.Spreadsheets.Values.Get(spreadsheetId, sheetRange).Context(ctx).Do()
+	body, err := resp.MarshalJSON()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, "Unable to read sheet")
+		helpers.AbortWithError(c, err)
 		return
 	}
 
-	json, err := resp.MarshalJSON()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, "Unable to parse sheet json")
-		return
-	}
-
-	c.Data(http.StatusOK, gin.MIMEJSON, json)
+	c.Data(http.StatusOK, gin.MIMEJSON, body)
 }

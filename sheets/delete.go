@@ -1,36 +1,27 @@
 package sheets
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/alkrauss48/cyrus-lyrics-api/helpers"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/api/drive/v3"
-	"google.golang.org/api/option"
 )
 
+// Delete moves one of the user's sheets to the Google Drive trash.
 func Delete(c *gin.Context) {
-	ctx := context.Background()
-	spreadsheetId := c.Param("id")
-
-	client, err := helpers.GetGoogleOAuthClient(c)
+	srv, err := helpers.GetDriveService(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+		helpers.AbortWithError(c, err)
 		return
 	}
 
-	srv, err := drive.NewService(ctx, option.WithHTTPClient(client))
+	_, err = srv.Files.Update(c.Param("id"), &drive.File{Trashed: true}).
+		Context(c.Request.Context()).
+		Do()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-	}
-
-	_, err = srv.Files.Update(spreadsheetId, &drive.File{
-		Trashed: true,
-	}).Do()
-
-	if err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+		helpers.AbortWithError(c, err)
+		return
 	}
 
 	c.Status(http.StatusNoContent)
