@@ -1,7 +1,15 @@
+// Command cyrus-lyrics-api is the backend for the CyrusLyrics iOS app.
 package main
 
 import (
+	"context"
+	"errors"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/alkrauss48/cyrus-lyrics-api/oauth"
 	"github.com/alkrauss48/cyrus-lyrics-api/public"
@@ -9,8 +17,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	addr            = ":8000"
+	shutdownTimeout = 10 * time.Second
+)
+
 func initRouter() *gin.Engine {
-	router := gin.Default()
+	router := gin.New()
+	router.Use(
+		// Query strings can hold OAuth codes and legacy-auth tokens, so
+		// don't write them to the request log.
+		gin.LoggerWithConfig(gin.LoggerConfig{SkipQueryString: true}),
+		gin.Recovery(),
+	)
 
 	// Public, unauthenticated routes
 	router.GET("/", public.Root)
@@ -30,10 +49,36 @@ func initRouter() *gin.Engine {
 }
 
 func main() {
-	router := initRouter()
-	err := router.Run(":8000")
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	if err != nil {
-		log.Fatal(err)
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           initRouter(),
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+
+	serveErr := make(chan error, 1)
+	go func() {
+		log.Printf("listening on %s", addr)
+		serveErr <- srv.ListenAndServe()
+	}()
+
+	select {
+	case err := <-serveErr:
+		if !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal(err)
+		}
+	case <-ctx.Done():
+		log.Print("shutting down")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			log.Printf("shutdown: %v", err)
+		}
 	}
 }
